@@ -32,7 +32,7 @@ class Option:
             self.option_type,
             self.algo,
         ]
-        return "-".join(id_values)
+        return "-".join([str(x) for x in id_values])
 
     @property
     def value(self) -> float:
@@ -44,7 +44,6 @@ class Option:
             func = bsm.bs_put_value
         return func(self.S, self.K, self.T, self.r, self.sigma)
 
-    @property
     def final_value(self, price: float) -> float:
         """Final value of option at expiration"""
         v = self.value

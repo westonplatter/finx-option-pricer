@@ -16,6 +16,9 @@ class OptionsPlot:
     def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True):
         results = {"strikes": []}
 
+        # NOTE - only look as far as the shortest dated option
+        min_time = min([op.T for op in self.options])
+
         strike_range = np.arange(self.spot_range[0], self.spot_range[1], self.strike_interval)
         for price in strike_range:
             results["strikes"].append(price)
@@ -23,7 +26,7 @@ class OptionsPlot:
         for day in range(0, days + 1, step):
             combined_values = []
             for option in self.options:
-                newT = option.T - (day / 365)
+                newT = min_time - (day / 365)
                 newDays = int(newT * 365)
 
                 if newT < 0.0:
@@ -45,17 +48,21 @@ class OptionsPlot:
                     values.append(value)
 
                 combined_values.append(values)
-                del values
 
-            print(np.array(combined_values).shape)
-            results[newDays] = np.sum(combined_values, axis=0)
+            combined_values = list(filter(None, combined_values))
+            if combined_values == []:
+                continue
+            x = np.sum(combined_values, axis=0)
+            if len(x) == 0.0:
+                continue
+            results[newDays] = x
 
-        # if show_final:
-        #     values = []
-        #     for price in strike_range:
-        #         value = option.final_value(price)
-        #         values.append(value)
-        #     results[f"{option.id}-final"] = values
+        if show_final:
+            values = []
+            for price in strike_range:
+                value = option.final_value(price)
+                values.append(value)
+            results[f"{option.id}-final"] = values
 
         # print(results)
         return pd.DataFrame(results)
