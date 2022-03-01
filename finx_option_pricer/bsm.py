@@ -5,37 +5,36 @@
 import numpy as np
 from scipy.stats import norm
 
-
 N = norm.cdf
 N_prime = norm.pdf
 
 
 def bs_call_value(S, K, T, r, sigma):
-    d1 = (np.log(S / K) + (r + sigma**2 / 2) * T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return S * N(d1) - K * np.exp(-r * T) * N(d2)
 
 
 def bs_put_value(S, K, T, r, sigma):
-    d1 = (np.log(S / K) + (r + sigma**2 / 2) * T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return K * np.exp(-r * T) * N(-d2) - S * N(-d1)
 
 
 def bs_calldiv_value(S, K, T, r, q, sigma):
-    d1 = (np.log(S / K) + (r - q + sigma**2 / 2) * T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return S * np.exp(-q * T) * N(d1) - K * np.exp(-r * T) * N(d2)
 
 
 def bs_putdiv_value(S, K, T, r, q, sigma):
-    d1 = (np.log(S / K) + (r - q + sigma**2 / 2) * T) / (sigma * np.sqrt(T))
+    d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return K * np.exp(-r * T) * N(-d2) - S * np.exp(-q * T) * N(-d1)
 
 
 def d1(S, K, T, r, sigma):
-    return (np.log(S / K) + (r + sigma**2 / 2) * T) / sigma * np.sqrt(T)
+    return (np.log(S / K) + (r + sigma ** 2 / 2) * T) / sigma * np.sqrt(T)
 
 
 def d2(S, K, T, r, sigma):
