@@ -13,7 +13,7 @@ class Option:
     r: float  # risk free rate
     # q: float # dividend rate
     sigma: float  # volatility
-    option_type: str = "c"
+    option_type: str = "c" # c or p
     algo: str = "bsm"
 
     @property
@@ -46,11 +46,21 @@ class Option:
 
     def final_value(self, price: float) -> float:
         """Final value of option at expiration"""
-        v = self.value
         if self.option_type == "c":
-            return np.max([price - self.K - v, -v])
+            return max(price - self.K, 0.0)
         elif self.option_type == "p":
-            return np.max([self.K - price - v, -v])
+            return max(self.K - price, 0.0)
+    
+    @property
+    def break_even_value(self) -> float:
+        """Break even value for option
+
+        Call, be_value = Strike + Call Value
+        Put, be_value = Strike - Put Value
+        """
+        # add or subtract depending if Call or Put
+        _value = self.value * (1 if self.option_type == "c" else -1) * 1.0
+        return self.K + _value
 
     @property
     def extrinsic_value(self) -> float:

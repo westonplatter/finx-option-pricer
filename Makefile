@@ -25,6 +25,9 @@ env.jupyter:
 test:
 	pytest .
 
+todo:
+	grep -irn todo .
+
 changelog:
 	git-chglog -o CHANGELOG.md
 
