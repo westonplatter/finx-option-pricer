@@ -13,7 +13,7 @@ class Option:
     r: float  # risk free rate
     # q: float # dividend rate
     sigma: float  # volatility
-    option_type: str = "c" # c or p
+    option_type: str = "c"  # c or p
     algo: str = "bsm"
 
     @property
@@ -50,7 +50,7 @@ class Option:
             return max(price - self.K, 0.0)
         elif self.option_type == "p":
             return max(self.K - price, 0.0)
-    
+
     @property
     def break_even_value(self) -> float:
         """Break even value for option

@@ -1,13 +1,9 @@
 import setuptools
 
-version_text = None
-with open("finx_option_pricer/version.txt", "r", encoding="utf-8") as f:
-    version_text = f.read()
+package_name = "finx_option_pricer"
+package_name_url = "finx-option-pricer"
 
-with open("README.md", "r") as f:
-    long_description = f.read()
-
-deps = [
+dependencies = [
     "loguru",
     "pandas >=1.3.0,<1.4",
     "matplotlib",
@@ -15,13 +11,27 @@ deps = [
     "pydantic",
     "scipy",
 ]
+test_dependencies = ["pytest"]
 
-test_deps = ["pytest"]
+url = f"https://github.com/westonplatter/{package_name_url}"
 
-project_url = "https://github.com/westonplatter/finx-option-pricer"
+
+# -----------------------------------------------------------------------------
+# standard finx package stuff
+# -----------------------------------------------------------------------------
+
+
+version_text = None
+with open(f"{package_name}/version.txt", "r", encoding="utf-8") as f:
+    version_text = f.read()
+
+with open("README.md", "r") as f:
+    long_description = f.read()
+
+project_url = url
 
 setuptools.setup(
-    name="finx_option_pricer",
+    name=package_name,
     version=version_text,
     description="Option pricer and visualizer",
     long_description=long_description,
@@ -31,9 +41,9 @@ setuptools.setup(
     license="BSD-3",
     url=project_url,
     python_requires=">=3.6",
-    packages=["finx_option_pricer"],
-    install_requires=deps,
-    tests_require=test_deps,
+    packages=[package_name],
+    install_requires=dependencies,
+    tests_require=test_dependencies,
     project_urls={
         "Issue Tracker": f"{project_url}/issues",
         "Source Code": f"{project_url}",

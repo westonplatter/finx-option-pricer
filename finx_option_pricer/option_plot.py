@@ -31,13 +31,27 @@ class OptionsPlot:
 
     def describe_option_positions(self):
         for op in self.option_positions:
-            print(op.id)
+            # print(op.id)
+            pass
+    
+    @property
+    def initial_value(self) -> float:
+        """Returns the aggregate value for the option_options
+
+        Returns:
+            float: aggregate value for self.option_options
+        """
+        total_value = 0.0
+        for op in self.option_positions:
+            total_value += op.option.value * op.quantity
+        return total_value
 
 
-    def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True):
-        """_summary_
 
-        Example return, 
+    def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True) -> pd.DataFrame:
+        """Generate value option positions as they decay with time.
+
+        Example return,
 
            strikes        10         5       0
         0     85.0 -1.358147 -1.858064 -1.9741
@@ -51,9 +65,12 @@ class OptionsPlot:
             show_final (bool, optional): _description_. Defaults to True.
 
         Returns:
-            _type_: _description_
+            (pd.DataFrame): _description_
         """
         results = {"strikes": []}
+
+        # let's only call this once and store in private var
+        __initial_value = self.initial_value
 
         # NOTE - only look as far as the shortest dated option
         min_time = min([op.option.T for op in self.option_positions])
@@ -70,9 +87,9 @@ class OptionsPlot:
         for day in range(0, days + 1, step):
             if day >= min_days:
                 continue
-        
-            annualized_days = day/252
-                
+
+            annualized_days = day / 252
+
             aggregate_position_value_wrt_strikes = []
             for option_position in self.option_positions:
                 newT = option_position.option.T - annualized_days
@@ -93,24 +110,23 @@ class OptionsPlot:
                     option_position_strike_values.append(value)
 
                 aggregate_position_value_wrt_strikes.append(option_position_strike_values)
-            
-            results[newDays] = np.sum(aggregate_position_value_wrt_strikes, axis=0)
 
-        # TODO - account for the initial premium cost basis of the options
+            results[newDays] = np.sum(aggregate_position_value_wrt_strikes, axis=0) - __initial_value
+
         # determine final value at expiration of nearest dated option
         if show_final:
             option_positions_values = []
-            
+
             for option_position in self.option_positions:
                 newT = option_position.option.T - min_time
 
                 option_position_strike_values = []
                 for price in strike_range:
                     value = None
-                    if (newT <= 1/252):
+                    if newT <= 1 / 252:
                         # option has expired - determine final value
-                        value = (option_position.option.final_value(price) * option_position.quantity)
-                    
+                        value = option_position.option.final_value(price) * option_position.quantity
+
                     else:
                         # option has not expired - determine pre-expiration value
                         x = Option(
@@ -126,11 +142,10 @@ class OptionsPlot:
                     option_position_strike_values.append(value)
 
                 option_positions_values.append(option_position_strike_values)
-            results[0] = list(np.sum(option_positions_values, axis=0))
+            results[0] = list(np.sum(option_positions_values, axis=0)) - __initial_value
 
         # return values as DataFrame
         return pd.DataFrame(results)
-
 
     def gen_value_df(self):
         results = {"strikes": []}
