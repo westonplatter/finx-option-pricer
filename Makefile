@@ -12,12 +12,12 @@ download.weekly:
 ### dev/env ops ###############################################################
 
 env.update:
-	pip install -r requirements.txt
+	pip install -r requirements/core.txt
 
 env.update.all:
-	pip install -r requirements.txt
-	pip install -r requirements-test.txt
-	pip install -r requirements-dev.txt
+	pip install -r requirements/base.txt
+	pip install -r requirements/test.txt
+	pip install -r requirements/dev.txt
 
 env.jupyter:
 	ipython kernel install --name "finx-all" --user
@@ -25,12 +25,8 @@ env.jupyter:
 test:
 	pytest .
 
-changelog:
-	git-chglog -o CHANGELOG.md
-
-changelog.commit: changelog
-	git add CHANGELOG.md && git commit CHANGELOG.md -m "update changelog"
-
+todo:
+	grep -irn todo .
 
 
 ### release ###################################################################

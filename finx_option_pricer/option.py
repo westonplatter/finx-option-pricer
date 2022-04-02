@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
-
 import finx_option_pricer.bsm as bsm
 
 
@@ -9,11 +7,11 @@ import finx_option_pricer.bsm as bsm
 class Option:
     S: float  # current price
     K: float  # strike price
-    T: float  # time to maturity (in years)
+    T: float  # time to maturity (in years, 0.5 => 6 months)
     r: float  # risk free rate
     # q: float # dividend rate
     sigma: float  # volatility
-    option_type: str = "c"
+    option_type: str = "c"  # c or p
     algo: str = "bsm"
 
     @property
@@ -32,7 +30,7 @@ class Option:
             self.option_type,
             self.algo,
         ]
-        return "-".join(id_values)
+        return "-".join([str(x) for x in id_values])
 
     @property
     def value(self) -> float:
@@ -44,14 +42,23 @@ class Option:
             func = bsm.bs_put_value
         return func(self.S, self.K, self.T, self.r, self.sigma)
 
-    @property
     def final_value(self, price: float) -> float:
         """Final value of option at expiration"""
-        v = self.value
         if self.option_type == "c":
-            return np.max([price - self.K - v, -v])
+            return max(price - self.K, 0.0)
         elif self.option_type == "p":
-            return np.max([self.K - price - v, -v])
+            return max(self.K - price, 0.0)
+
+    @property
+    def break_even_value(self) -> float:
+        """Break even value for option
+
+        Call, be_value = Strike + Call Value
+        Put, be_value = Strike - Put Value
+        """
+        # add or subtract depending if Call or Put
+        _value = self.value * (1 if self.option_type == "c" else -1) * 1.0
+        return self.K + _value
 
     @property
     def extrinsic_value(self) -> float:
