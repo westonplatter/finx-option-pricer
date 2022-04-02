@@ -1,14 +1,12 @@
 from dataclasses import dataclass, replace
-import math
-from re import L
 from typing import List
-
-from click import option
 
 import numpy as np
 import pandas as pd
 
 from finx_option_pricer.option import Option
+
+MARKET_DAYS_PER_YEAR = 252
 
 
 @dataclass
@@ -16,9 +14,12 @@ class OptionPosition:
     option: Option
     quantity: int
 
+    SHORT = "short"
+    LONG = "long"
+
     @property
     def id(self):
-        side = "long" if self.quantity >= 1 else "short"
+        side = self.LONG if self.quantity >= 1 else self.SHORT
         qty = abs(self.quantity)
         return f"{self.option.id}-{side}{qty}"
 
@@ -29,11 +30,6 @@ class OptionsPlot:
     spot_range: List
     strike_interval: float = 0.5
 
-    def describe_option_positions(self):
-        for op in self.option_positions:
-            # print(op.id)
-            pass
-    
     @property
     def initial_value(self) -> float:
         """Returns the aggregate value for the option_options
@@ -45,8 +41,6 @@ class OptionsPlot:
         for op in self.option_positions:
             total_value += op.option.value * op.quantity
         return total_value
-
-
 
     def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True) -> pd.DataFrame:
         """Generate value option positions as they decay with time.
@@ -60,12 +54,12 @@ class OptionsPlot:
         3     86.5 -1.009635 -1.728572 -1.9741
 
         Args:
-            days (int): _description_
-            step (int, optional): _description_. Defaults to 1.
-            show_final (bool, optional): _description_. Defaults to True.
+            days (int): number days to increment over.
+            step (int, optional): step or increment interval. Defaults to 1.
+            show_final (bool, optional): option(s) value at expiration of nearest data option. Defaults to True.
 
         Returns:
-            (pd.DataFrame): _description_
+            (pd.DataFrame): DataFrame with columns [strikes, days-step1, days-step2, ..., expiration]
         """
         results = {"strikes": []}
 
@@ -74,7 +68,7 @@ class OptionsPlot:
 
         # NOTE - only look as far as the shortest dated option
         min_time = min([op.option.T for op in self.option_positions])
-        min_days = int(min_time * 252)
+        min_days = int(min_time * MARKET_DAYS_PER_YEAR)
 
         _start = self.spot_range[0]
         _end = self.spot_range[1] + self.strike_interval
@@ -88,13 +82,13 @@ class OptionsPlot:
             if day >= min_days:
                 continue
 
-            annualized_days = day / 252
+            annualized_days = day / MARKET_DAYS_PER_YEAR
 
             aggregate_position_value_wrt_strikes = []
             for option_position in self.option_positions:
                 newT = option_position.option.T - annualized_days
 
-                newDays = int(newT * 252)
+                newDays = int(newT * MARKET_DAYS_PER_YEAR)
 
                 option_position_strike_values = []
                 for price in strike_range:
@@ -123,7 +117,7 @@ class OptionsPlot:
                 option_position_strike_values = []
                 for price in strike_range:
                     value = None
-                    if newT <= 1 / 252:
+                    if newT <= 1 / MARKET_DAYS_PER_YEAR:
                         # option has expired - determine final value
                         value = option_position.option.final_value(price) * option_position.quantity
 
@@ -145,26 +139,4 @@ class OptionsPlot:
             results[0] = list(np.sum(option_positions_values, axis=0)) - __initial_value
 
         # return values as DataFrame
-        return pd.DataFrame(results)
-
-    def gen_value_df(self):
-        results = {"strikes": []}
-
-        strike_range = np.arange(self.spot_range[0], self.spot_range[1], self.strike_interval)
-
-        for price in strike_range:
-            results["strikes"].append(price)
-
-        for option in self.options:
-            option_id = option.id
-            x = replace(option)
-            values = []
-
-            for price in strike_range:
-                x.S = price
-                value = x.value
-                values.append(value)
-            results[option_id] = values
-            del values
-
         return pd.DataFrame(results)

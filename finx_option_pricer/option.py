@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
-
 import finx_option_pricer.bsm as bsm
 
 
@@ -9,7 +7,7 @@ import finx_option_pricer.bsm as bsm
 class Option:
     S: float  # current price
     K: float  # strike price
-    T: float  # time to maturity (in years)
+    T: float  # time to maturity (in years, 0.5 => 6 months)
     r: float  # risk free rate
     # q: float # dividend rate
     sigma: float  # volatility

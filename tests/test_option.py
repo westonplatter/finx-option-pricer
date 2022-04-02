@@ -1,5 +1,5 @@
-from doctest import master
 import math
+from doctest import master
 
 from finx_option_pricer.option import Option
 
