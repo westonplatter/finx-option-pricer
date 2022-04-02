@@ -1,4 +1,4 @@
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import List
 
 import numpy as np
@@ -13,6 +13,7 @@ MARKET_DAYS_PER_YEAR = 252
 class OptionPosition:
     option: Option
     quantity: int
+    end_sigma: float = None
 
     SHORT = "short"
     LONG = "long"
@@ -22,6 +23,11 @@ class OptionPosition:
         side = self.LONG if self.quantity >= 1 else self.SHORT
         qty = abs(self.quantity)
         return f"{self.option.id}-{side}{qty}"
+
+    def interpolated_vol(self, fraction: float) -> float:
+        """Using the start and end IV, calc the linear interpolated IV"""
+        assert self.end_sigma is not None, "end_sigma must be not None"
+        return self.option.sigma - (self.option.sigma - self.end_sigma) * fraction
 
 
 @dataclass
@@ -42,6 +48,8 @@ class OptionsPlot:
             total_value += op.option.value * op.quantity
         return total_value
 
+    # flake8: noqa: C901
+    # TODO - resolve C901 issue
     def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True) -> pd.DataFrame:
         """Generate value option positions as they decay with time.
 
@@ -84,11 +92,23 @@ class OptionsPlot:
 
             annualized_days = day / MARKET_DAYS_PER_YEAR
 
+            #
+            # TODO - This could use a good refactoring. Too much going on at once
+            #
             aggregate_position_value_wrt_strikes = []
             for option_position in self.option_positions:
                 newT = option_position.option.T - annualized_days
 
                 newDays = int(newT * MARKET_DAYS_PER_YEAR)
+
+                # if the "option_position" has an end_sigma non None value, this means the option's sigma/vol
+                # is expected to linearly change as the option progresses to expiration. For example,
+                # consider SPY options that at 45dte (IV ~ 16-22 vol) compared to 7dte (IV ~ 10-14 vol)
+                # The adjustments in vol are calculated within OptionPosition.interpolated_vol()
+                sigma = option_position.option.sigma
+                if option_position.end_sigma is not None:
+                    fraction_to_dte = (option_position.option.T - newT) / option_position.option.T
+                    sigma = option_position.interpolated_vol(fraction_to_dte)
 
                 option_position_strike_values = []
                 for price in strike_range:
@@ -97,7 +117,7 @@ class OptionsPlot:
                         K=option_position.option.K,
                         T=newT,
                         r=option_position.option.r,
-                        sigma=option_position.option.sigma,
+                        sigma=sigma,
                         option_type=option_position.option.option_type,
                     )
                     value = x.value * option_position.quantity
@@ -108,6 +128,9 @@ class OptionsPlot:
             results[newDays] = np.sum(aggregate_position_value_wrt_strikes, axis=0) - __initial_value
 
         # determine final value at expiration of nearest dated option
+        #
+        # TODO - This could use a good refactoring. Too much going on at once
+        #
         if show_final:
             option_positions_values = []
 
