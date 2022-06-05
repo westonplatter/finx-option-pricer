@@ -17,7 +17,7 @@ class Option:
     @property
     def _t_days(self) -> int:
         """Time in days"""
-        return int(self.T * 365)
+        return int(self.T * 252)
 
     @property
     def id(self) -> str:
