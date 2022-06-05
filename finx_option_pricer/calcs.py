@@ -4,7 +4,7 @@ import pandas as pd
 from finx_option_pricer.option import CALL, PUT, Option
 
 
-def calc_combined_call_put_iv(
+def calc_straddle_iv(
     S: float = None, K: float = None, call_price: float = None, put_price: float = None, time_days: int = None
 ):
     """Determine adjustment and Call/Put IV
