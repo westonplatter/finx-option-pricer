@@ -3,8 +3,8 @@
 # https://www.codearmo.com/python-tutorial/options-trading-greeks-black-scholes
 #
 import numpy as np
-from scipy.stats import norm
 from scipy.optimize import minimize_scalar
+from scipy.stats import norm
 
 N = norm.cdf
 N_prime = norm.pdf

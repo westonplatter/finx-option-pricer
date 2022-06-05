@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 import finx_option_pricer.bsm as bsm
 
-
 CALL = "c"
 PUT = "p"
 
