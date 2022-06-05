@@ -80,7 +80,7 @@ class OptionsPlot:
 
         # NOTE - only look as far as the shortest dated option
         min_time = min([op.option.T for op in self.option_positions])
-        min_days = int(min_time * MARKET_DAYS_PER_YEAR)
+        min_days = int(min_time * market_days_year)
 
         _start = self.spot_range[0]
         _end = self.spot_range[1] + self.strike_interval
@@ -94,7 +94,7 @@ class OptionsPlot:
             if day >= min_days:
                 continue
 
-            annualized_days = day / MARKET_DAYS_PER_YEAR
+            annualized_days = day / market_days_year
 
             #
             # TODO - This could use a good refactoring. Too much going on at once
@@ -103,7 +103,7 @@ class OptionsPlot:
             for option_position in self.option_positions:
                 newT = option_position.option.T - annualized_days
 
-                newDays = int(newT * MARKET_DAYS_PER_YEAR)
+                newDays = int(newT * market_days_year)
 
                 # if the "option_position" has an end_sigma non None value, this means the option's sigma/vol
                 # is expected to linearly change as the option progresses to expiration. For example,
@@ -144,7 +144,7 @@ class OptionsPlot:
                 option_position_strike_values = []
                 for price in strike_range:
                     value = None
-                    if newT <= 1 / MARKET_DAYS_PER_YEAR:
+                    if newT <= 1 / market_days_year:
                         # option has expired - determine final value
                         value = option_position.option.final_value(price) * option_position.quantity
 
