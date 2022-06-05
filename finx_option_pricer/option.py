@@ -49,6 +49,14 @@ class Option:
         elif self.option_type == "p":
             return max(self.K - price, 0.0)
 
+    def iv(self, opt_value: float) -> float:
+        """Calculated Implied Volatility based on opt_price"""
+        if self.option_type == CALL:
+            return bsm.implied_vol_call(opt_value, self.S, self.K, self.T, self.r)
+        if self.option_type == PUT:
+            return bsm.implied_vol_put(opt_value, self.S, self.K, self.T, self.r)
+        raise ValueError(f"Must select either c or p (for call or put). Presently, self.option_type={self.option_type}")
+
     @property
     def break_even_value(self) -> float:
         """Break even value for option
