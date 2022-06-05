@@ -50,7 +50,9 @@ class OptionsPlot:
 
     # flake8: noqa: C901
     # TODO - resolve C901 issue
-    def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True) -> pd.DataFrame:
+    def gen_value_df_timeincrementing(
+        self, days: int, step: int = 1, show_final: bool = True, market_days_year: int = 252, value_relative=True
+    ) -> pd.DataFrame:
         """Generate value option positions as they decay with time.
 
         Example return,
@@ -65,6 +67,8 @@ class OptionsPlot:
             days (int): number days to increment over.
             step (int, optional): step or increment interval. Defaults to 1.
             show_final (bool, optional): option(s) value at expiration of nearest data option. Defaults to True.
+            market_days_year(int): number of market days in a calendar year. Defaults to 252.
+            value_relative(boolean): value the options package with respect to initial value vs absolute value. Defaults to True.
 
         Returns:
             (pd.DataFrame): DataFrame with columns [strikes, days-step1, days-step2, ..., expiration]
@@ -159,7 +163,9 @@ class OptionsPlot:
                     option_position_strike_values.append(value)
 
                 option_positions_values.append(option_position_strike_values)
-            results[0] = list(np.sum(option_positions_values, axis=0)) - __initial_value
+
+            agg_value_sum = list(np.sum(option_positions_values, axis=0))
+            results[0] = agg_value_sum - __initial_value if value_relative is True else agg_value_sum
 
         # return values as DataFrame
         return pd.DataFrame(results)
