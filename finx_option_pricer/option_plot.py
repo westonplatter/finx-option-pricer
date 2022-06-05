@@ -24,6 +24,10 @@ class OptionPosition:
         qty = abs(self.quantity)
         return f"{self.option.id}-{side}{qty}"
 
+    @property
+    def initial_value(self) -> float:
+        return self.option.value * self.quantity
+
     def interpolated_vol(self, fraction: float) -> float:
         """Using the start and end IV, calc the linear interpolated IV"""
         assert self.end_sigma is not None, "end_sigma must be not None"
@@ -50,7 +54,9 @@ class OptionsPlot:
 
     # flake8: noqa: C901
     # TODO - resolve C901 issue
-    def gen_value_df_timeincrementing(self, days: int, step: int = 1, show_final: bool = True) -> pd.DataFrame:
+    def gen_value_df_timeincrementing(
+        self, days: int, step: int = 1, show_final: bool = True, market_days_year: int = 252, value_relative=True
+    ) -> pd.DataFrame:
         """Generate value option positions as they decay with time.
 
         Example return,
@@ -65,6 +71,8 @@ class OptionsPlot:
             days (int): number days to increment over.
             step (int, optional): step or increment interval. Defaults to 1.
             show_final (bool, optional): option(s) value at expiration of nearest data option. Defaults to True.
+            market_days_year(int): number of market days in a calendar year. Defaults to 252.
+            value_relative(boolean): value the options package with respect to initial value vs absolute value. Defaults to True.
 
         Returns:
             (pd.DataFrame): DataFrame with columns [strikes, days-step1, days-step2, ..., expiration]
@@ -76,7 +84,7 @@ class OptionsPlot:
 
         # NOTE - only look as far as the shortest dated option
         min_time = min([op.option.T for op in self.option_positions])
-        min_days = int(min_time * MARKET_DAYS_PER_YEAR)
+        min_days = int(min_time * market_days_year)
 
         _start = self.spot_range[0]
         _end = self.spot_range[1] + self.strike_interval
@@ -90,7 +98,7 @@ class OptionsPlot:
             if day >= min_days:
                 continue
 
-            annualized_days = day / MARKET_DAYS_PER_YEAR
+            annualized_days = day / market_days_year
 
             #
             # TODO - This could use a good refactoring. Too much going on at once
@@ -99,7 +107,7 @@ class OptionsPlot:
             for option_position in self.option_positions:
                 newT = option_position.option.T - annualized_days
 
-                newDays = int(newT * MARKET_DAYS_PER_YEAR)
+                newDays = int(newT * market_days_year)
 
                 # if the "option_position" has an end_sigma non None value, this means the option's sigma/vol
                 # is expected to linearly change as the option progresses to expiration. For example,
@@ -125,7 +133,8 @@ class OptionsPlot:
 
                 aggregate_position_value_wrt_strikes.append(option_position_strike_values)
 
-            results[newDays] = np.sum(aggregate_position_value_wrt_strikes, axis=0) - __initial_value
+            agg_value_sum = np.sum(aggregate_position_value_wrt_strikes, axis=0)
+            results[newDays] = agg_value_sum - __initial_value if value_relative is True else agg_value_sum
 
         # determine final value at expiration of nearest dated option
         #
@@ -140,7 +149,7 @@ class OptionsPlot:
                 option_position_strike_values = []
                 for price in strike_range:
                     value = None
-                    if newT <= 1 / MARKET_DAYS_PER_YEAR:
+                    if newT <= 1 / market_days_year:
                         # option has expired - determine final value
                         value = option_position.option.final_value(price) * option_position.quantity
 
@@ -159,7 +168,9 @@ class OptionsPlot:
                     option_position_strike_values.append(value)
 
                 option_positions_values.append(option_position_strike_values)
-            results[0] = list(np.sum(option_positions_values, axis=0)) - __initial_value
+
+            agg_value_sum = list(np.sum(option_positions_values, axis=0))
+            results[0] = agg_value_sum - __initial_value if value_relative is True else agg_value_sum
 
         # return values as DataFrame
         return pd.DataFrame(results)

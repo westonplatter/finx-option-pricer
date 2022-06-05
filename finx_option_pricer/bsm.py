@@ -3,6 +3,7 @@
 # https://www.codearmo.com/python-tutorial/options-trading-greeks-black-scholes
 #
 import numpy as np
+from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 
 N = norm.cdf
@@ -22,12 +23,14 @@ def bs_put_value(S, K, T, r, sigma):
 
 
 def bs_calldiv_value(S, K, T, r, q, sigma):
+    """Call with dividend value"""
     d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return S * np.exp(-q * T) * N(d1) - K * np.exp(-r * T) * N(d2)
 
 
 def bs_putdiv_value(S, K, T, r, q, sigma):
+    """Put with dividend value"""
     d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return K * np.exp(-r * T) * N(-d2) - S * np.exp(-q * T) * N(-d1)
@@ -75,3 +78,21 @@ def rho_call(S, K, T, r, sigma):
 
 def rho_put(S, K, T, r, sigma):
     return -K * T * np.exp(-r * T) * N(-d2(S, K, T, r, sigma))
+
+
+def implied_vol_call(opt_value, S, K, T, r):
+    # https://www.codearmo.com/python-tutorial/calculating-volatility-smile
+    def call_obj(sigma):
+        return abs(bs_call_value(S, K, T, r, sigma) - opt_value)
+
+    res = minimize_scalar(call_obj, bounds=(0.01, 6), method="bounded")
+    return res.x
+
+
+def implied_vol_put(opt_value, S, K, T, r):
+    # https://www.codearmo.com/python-tutorial/calculating-volatility-smile
+    def put_obj(sigma):
+        return abs(bs_put_value(S, K, T, r, sigma) - opt_value)
+
+    res = minimize_scalar(put_obj, bounds=(0.01, 6), method="bounded")
+    return res.x
