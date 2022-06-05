@@ -3,6 +3,10 @@ from dataclasses import dataclass
 import finx_option_pricer.bsm as bsm
 
 
+CALL = "c"
+PUT = "p"
+
+
 @dataclass
 class Option:
     S: float  # current price

@@ -24,6 +24,10 @@ class OptionPosition:
         qty = abs(self.quantity)
         return f"{self.option.id}-{side}{qty}"
 
+    @property
+    def initial_value(self) -> float:
+        return self.option.value * self.quantity
+
     def interpolated_vol(self, fraction: float) -> float:
         """Using the start and end IV, calc the linear interpolated IV"""
         assert self.end_sigma is not None, "end_sigma must be not None"
@@ -129,7 +133,8 @@ class OptionsPlot:
 
                 aggregate_position_value_wrt_strikes.append(option_position_strike_values)
 
-            results[newDays] = np.sum(aggregate_position_value_wrt_strikes, axis=0) - __initial_value
+            agg_value_sum = np.sum(aggregate_position_value_wrt_strikes, axis=0)
+            results[newDays] = agg_value_sum - __initial_value if value_relative is True else agg_value_sum
 
         # determine final value at expiration of nearest dated option
         #

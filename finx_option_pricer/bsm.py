@@ -23,12 +23,14 @@ def bs_put_value(S, K, T, r, sigma):
 
 
 def bs_calldiv_value(S, K, T, r, q, sigma):
+    """Call with dividend value"""
     d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return S * np.exp(-q * T) * N(d1) - K * np.exp(-r * T) * N(d2)
 
 
 def bs_putdiv_value(S, K, T, r, q, sigma):
+    """Put with dividend value"""
     d1 = (np.log(S / K) + (r - q + sigma ** 2 / 2) * T) / (sigma * np.sqrt(T))
     d2 = d1 - sigma * np.sqrt(T)
     return K * np.exp(-r * T) * N(-d2) - S * np.exp(-q * T) * N(-d1)
