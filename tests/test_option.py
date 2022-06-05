@@ -35,3 +35,9 @@ def test_break_even_value():
     assert math.isclose(option.value, expected_value, abs_tol=0.01)
     expected_break_even_value = 100.44
     assert math.isclose(option.break_even_value, expected_break_even_value, abs_tol=0.01)
+
+
+def test_iv():
+    option = Option(S=90, K=100, T=1 / 12, r=0.0, sigma=None, option_type="c")
+    expected_iv = 0.608
+    assert math.isclose(option.iv(2.8), expected_iv, abs_tol=0.01)
