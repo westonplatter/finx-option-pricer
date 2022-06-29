@@ -107,11 +107,11 @@ class Option:
 
     @property
     def gamma(self) -> float:
-        bsm.gamma(self.S, self.K, self.T, self.r, self.sigma)
+        return bsm.gamma(self.S, self.K, self.T, self.r, self.sigma)
 
     @property
     def vega(self) -> float:
-        bsm.vega(self.S, self.K, self.T, self.r, self.sigma)
+        return bsm.vega(self.S, self.K, self.T, self.r, self.sigma)
 
     @property
     def theta(self) -> float:
