@@ -1,12 +1,12 @@
 ### dev/env ops ###############################################################
 
 env.update:
-	pip install -r requirements/core.txt
+	pip install -r requirements/requirements.txt
 
 env.update.all:
-	pip install -r requirements/base.txt
-	pip install -r requirements/test.txt
-	pip install -r requirements/dev.txt
+	pip install -r requirements/requirements.txt
+	pip install -r requirements/requirements-test.txt
+	pip install -r requirements/requirements-dev.txt
 
 env.jupyter:
 	ipython kernel install --name "finx-all" --user
