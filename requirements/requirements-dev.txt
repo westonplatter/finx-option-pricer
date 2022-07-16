@@ -9,4 +9,8 @@ matplotlib
 twine
 
 jupyterlab
+jupyterlab-dash
+jupyter_dash
 nbstripout
+plotly
+
