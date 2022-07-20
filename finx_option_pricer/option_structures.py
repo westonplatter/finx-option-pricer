@@ -10,6 +10,7 @@ def gen_calendar(
     front_days: int, 
     front_vol: float, 
     front_vol_final: float, 
+    back_days: int,
     back_vol: float, 
     back_vol_final: float,
     option_type: str = 'c',
@@ -30,7 +31,7 @@ def gen_calendar(
     
     # convert days to decimal of years
     front_time = front_days/MARKET_DAYS_PER_YEAR
-    back_time = (front_days+1)/MARKET_DAYS_PER_YEAR
+    back_time = back_days/MARKET_DAYS_PER_YEAR
 
     front = OptionPosition(
         quantity=-1, 

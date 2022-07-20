@@ -4,6 +4,7 @@ from dash import html
 from dash.dependencies import Input, Output
 import pandas as pd
 import plotly.express as px
+import math
 
 from finx_option_pricer.option_structures import gen_calendar
 from finx_option_pricer.option_plot import OptionsPlot
@@ -19,7 +20,9 @@ def gen_calendar_df(
     front_vol_initial, 
     front_vol_final, 
     back_vol_initial, 
-    back_vol_final, 
+    back_vol_final,
+    front_days: int = 20,
+    back_days: int = 21,
     option_type='c', 
     increment_days=1, 
     relative_value=1
@@ -33,9 +36,10 @@ def gen_calendar_df(
     kwargs = dict(
         spot_price=spot_price, 
         strike_price=strike_price,
-        front_days=days, 
+        front_days=front_days, 
         front_vol=fs,
         front_vol_final=fsf,
+        back_days=back_days,
         back_vol=bs,
         back_vol_final=bsf,
         option_type='c',
@@ -83,36 +87,53 @@ app.layout = html.Div(children = [
     html.Br(),
 
     html.Label("Increment Days -- "),
-    dcc.Input(id='id_input_increment_days', value=1, debounce=True, type='number', min=1, max=30, step=1),
+    dcc.Input(id='id_input_increment_days', value=1, debounce=True, type='number', min=1, max=30, step=2),
     html.Br(),
     
-    html.Label("DTE, days ---------"),
-    dcc.Input(id='id_input_dte', value=20, debounce=True, type='number', min=1, max=60, step=1),
+    html.Label("Front, days ---------"),
+    dcc.Input(id='id_input_front_days', value=20, debounce=True, type='number', min=1, max=60),
     html.Br(),
 
+    html.Label("Back, days ---------"),
+    dcc.Input(id='id_input_back_days', value=21, debounce=True, type='number', min=1, max=60),
+    html.Br(),
 
     html.Label("Front Vol, initial -- "),
-    dcc.Input(id='id_input_front_vol_initial', value=0.16, debounce=True, type='number'),
+    dcc.Input(id='id_input_front_vol_initial', value=0.16, debounce=True, type='number', step=0.01),
     html.Br(),
 
     html.Label("Front Vol, final --- "),
-    dcc.Input(id='id_input_front_vol_final', value=0.16, debounce=True, type='number'),
+    dcc.Input(id='id_input_front_vol_final', value=0.16, debounce=True, type='number', step=0.01),
     html.Br(),
 
     html.Label("Back Vol, initial -- "),
-    dcc.Input(id='id_input_back_vol_initial', value=0.16, debounce=True, type='number'),
+    dcc.Input(id='id_input_back_vol_initial', value=0.16, debounce=True, type='number', step=0.01),
     html.Br(),
 
     html.Label("Back Vol, final ---- "),
-    dcc.Input(id='id_input_back_vol_final', value=0.16, debounce=True, type='number'),
+    dcc.Input(id='id_input_back_vol_final', value=0.16, debounce=True, type='number', step=0.01),
     html.Br(),
 
     html.Label("Value Relative --- "),
-    dcc.Input(id='id_input_relative_value', value=1, debounce=True, type='number', min=0, max=1, step=1),
+    dcc.Input(id='id_input_relative_value', value=0, debounce=True, type='number', min=0, max=1, step=1),
     html.Br(),
 
+    html.Label("Vix Percent ------ "),
+    dcc.Input(id='id_input_vix_percent', value=0.24, debounce=True, type='number', step=0.01),
+    html.Br(),
+
+    html.Label("Vix Std ---------- "),
+    dcc.Input(id='id_input_vix_std', value=1.0, debounce=True, type='number', step=0.1),
+    html.Br(),
+
+    html.Label("Vix Days -------- "),
+    dcc.Input(id='id_input_vix_days', value=10, debounce=True, type='number', step=1),
+    html.Br(),
+
+    html.Br(),
+    html.Div(id='textarea-output', style={'whiteSpace': 'pre-line'}),
     
-    dcc.Graph(id='inflow_graph')
+    dcc.Graph(id='inflow_graph'),
 ])
 
 
@@ -120,22 +141,45 @@ app.layout = html.Div(children = [
 # UI event callbacks
 
 @app.callback(
-    Output('inflow_graph', 'figure'),
-    Input('id_input_strike_price', 'value'),
-    Input('id_input_spot_price', 'value'),
-    Input('id_input_spot_range', 'value'),
-    Input('id_input_increment_days', 'value'),
-    Input('id_input_dte', 'value'),
-    Input('id_input_front_vol_initial', 'value'),
-    Input('id_input_front_vol_final', 'value'),
-    Input('id_input_back_vol_initial', 'value'),
-    Input('id_input_back_vol_final', 'value'),
-    Input('id_input_relative_value', 'value'),
+    [
+        Output('inflow_graph', 'figure'),
+        Output('textarea-output', 'children'),
+        
+    ],
+    [
+        Input('id_input_strike_price', 'value'),
+        Input('id_input_spot_price', 'value'),
+        Input('id_input_spot_range', 'value'),
+        Input('id_input_increment_days', 'value'),
+        
+        Input('id_input_front_days', 'value'),
+        Input('id_input_back_days', 'value'),
+
+        Input('id_input_front_vol_initial', 'value'),
+        Input('id_input_front_vol_final', 'value'),
+        Input('id_input_back_vol_initial', 'value'),
+        Input('id_input_back_vol_final', 'value'),
+        Input('id_input_relative_value', 'value'),
+        Input('id_input_vix_percent', 'value'),
+        Input('id_input_vix_std', 'value'),
+        Input('id_input_vix_days', 'value'),
+    ]
 )
 def update_graph(
-    spot_price, strike_price, spot_range, increment_days, dte, 
-    front_vol_initial, front_vol_final, back_vol_initial, back_vol_final,
-    relative_value
+    spot_price, 
+    strike_price,
+    spot_range,
+    increment_days,
+    front_days,
+    back_days,
+    front_vol_initial, 
+    front_vol_final, 
+    back_vol_initial, 
+    back_vol_final,
+    relative_value,
+    vix_percent,
+    vix_std,
+    vix_days,
 ):
 
     spot_range = [
@@ -143,7 +187,7 @@ def update_graph(
         spot_price + spot_range,
     ]
     
-    dte = int(dte)
+    dte = int(front_days)
     increment_days = int(increment_days)
     assert relative_value in [0, 1], "relative value must be 0 or 1"
         
@@ -156,6 +200,8 @@ def update_graph(
         front_vol_final,
         back_vol_initial,
         back_vol_final,
+        front_days=front_days,
+        back_days=back_days,
         increment_days=increment_days,
         relative_value=relative_value,
         option_type='c'
@@ -180,7 +226,13 @@ def update_graph(
     initial_cost = df.loc[spot_price]["t0"]
     fig.add_hline(y=initial_cost, line_width=1, line_color="orange")
 
-    return fig
+    move_percent = vix_std * vix_percent * math.sqrt(vix_days/252.0)
+    move_underlying = spot_price * move_percent
+    upside, downside = spot_price + move_underlying, spot_price - move_underlying
+    fig.add_vline(x=upside, line_width=1, line_dash="dash", line_color="green")
+    fig.add_vline(x=downside, line_width=1, line_dash="dash", line_color="green")
+
+    return [fig, f"{initial_cost:.2f}"]
 
 
 ###############################################################################
