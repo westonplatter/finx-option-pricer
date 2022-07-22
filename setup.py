@@ -36,7 +36,7 @@ setuptools.setup(
     description="Option pricer and visualizer",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="westonplatter",
+    author="Weston Platter",
     author_email="westonplatter+finx@gmail.com",
     license="BSD-3",
     url=project_url,
