@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 import math
 
+from dash_apps.utils import calc_max_profit, calc_max_loss, calc_max_loss_strike
 from finx_option_pricer.option_structures import gen_calendar
 from finx_option_pricer.option_plot import OptionsPlot
 
@@ -70,7 +71,7 @@ def gen_calendar_df(
 
 app = dash.Dash()
 app.layout = html.Div(children = [
-    html.H1(children='Calendar Pricer'),
+    html.H1(children='Calendar'),
     html.Br(),
     html.Br(),
 
@@ -115,7 +116,7 @@ app.layout = html.Div(children = [
     html.Br(),
 
     html.Label("Value Relative --- "),
-    dcc.Input(id='id_input_relative_value', value=0, debounce=True, type='number', min=0, max=1, step=1),
+    dcc.Input(id='id_input_relative_value', value=1, debounce=True, type='number', min=0, max=1, step=1),
     html.Br(),
 
     html.Label("Vix Percent ------ "),
@@ -226,16 +227,29 @@ def update_graph(
     initial_cost = df.loc[spot_price]["t0"]
     fig.add_hline(y=initial_cost, line_width=1, line_color="orange")
 
+    # metrics
+    max_profit = calc_max_profit(df)
+    max_loss = calc_max_loss(df)
+
     move_percent = vix_std * vix_percent * math.sqrt(vix_days/252.0)
     move_underlying = spot_price * move_percent
     upside, downside = spot_price + move_underlying, spot_price - move_underlying
     fig.add_vline(x=upside, line_width=1, line_dash="dash", line_color="green")
     fig.add_vline(x=downside, line_width=1, line_dash="dash", line_color="green")
 
-    return [fig, f"{initial_cost:.2f}"]
+    max_loss_vix = calc_max_loss_strike(df, downside, upside)
+
+    cost_info = f"""
+        initial_cost = {initial_cost:.2f}
+        max_profit   =  {max_profit:.2f}
+        max_loss     = {max_loss:.2f}
+        max_loss_vix =  {max_loss_vix:.2f}
+    """
+
+    return [fig, cost_info]
 
 
 ###############################################################################
 # Run app
 
-app.run_server(debug=True, use_reloader=True) # Turn off reloader if inside Jupyter
+app.run_server(debug=True, use_reloader=True, port=9999) # Turn off reloader if inside Jupyter
